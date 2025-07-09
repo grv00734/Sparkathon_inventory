@@ -1,47 +1,17 @@
+// scripts/rebalanceProducts.js
 
-const mongoose = require('mongoose');
-const csv = require('csv-parser');
-const fs = require('fs');
-require('dotenv').config();
+import { exec } from 'child_process';
+import path from 'path';
 
-const Inventory = require('../server/models/Inventory');
+const pythonScript = path.resolve('ml-engine/rebalance.py');
 
-mongoose.connect(process.env.MONGO_URI).then(() => {
-  console.log('Connected to MongoDB for rebalancing');
-  runRebalance();
+exec(`python ${pythonScript}`, (error, stdout, stderr) => {
+  if (error) {
+    console.error('Error running rebalance script:', error.message);
+    return;
+  }
+  if (stderr) {
+    console.error('STDERR:', stderr);
+  }
+  console.log('Rebalance complete:\n', stdout);
 });
-
-function runRebalance() {
-  const transfers = [];
-
-  fs.createReadStream('ml-engine/transfer_plan.csv')
-    .pipe(csv())
-    .on('data', (row) => {
-      transfers.push(row);
-    })
-    .on('end', async () => {
-      for (let transfer of transfers) {
-        const { SKU, From, To, Quantity } = transfer;
-        const qty = parseInt(Quantity);
-
-        
-        await Inventory.findOneAndUpdate(
-          { sku: SKU, warehouse: From },
-          { $inc: { quantity: -qty } },
-          { upsert: true }
-        );
-
-        
-        await Inventory.findOneAndUpdate(
-          { sku: SKU, warehouse: To },
-          { $inc: { quantity: qty } },
-          { upsert: true }
-        );
-
-        console.log(`Transferred ${qty} of ${SKU} from ${From} to ${To}`);
-      }
-
-      console.log('Rebalancing completed');
-      mongoose.disconnect();
-    });
-}
