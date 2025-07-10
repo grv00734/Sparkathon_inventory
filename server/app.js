@@ -1,16 +1,10 @@
 // server/app.js
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
-import mongoose from 'mongoose';
 import morgan from 'morgan';
+import dotenv from 'dotenv';
 
-// Import routes
-import orderRoutes from './routes/orderRoutes.js';
-import deliveryRoutes from './routes/deliveryRoutes.js';
-import inventoryRoutes from './routes/inventoryRoutes.js';
-import forecastRoutes from './routes/forecastRoutes.js';
-
+// Load environment variables
 dotenv.config();
 
 const app = express();
@@ -18,26 +12,21 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(morgan('dev')); // Logs requests (GET /api/... etc)
+app.use(morgan('dev')); // Logs HTTP requests
 
-// MongoDB Connection
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/smart_delivery';
+// Import routes (match filenames exactly)
+import orderRoutes     from './routes/orderRoutes.js';
+import deliveryRoutes  from './routes/deliveryroutes.js';
+import inventoryRoutes from './routes/inventoryroutes.js';
+import forecastRoutes  from './routes/forecastroutes.js';
+import userRoutes      from './routes/userRoutes.js';  // if you have userRoutes
 
-mongoose.connect(MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
-.then(() => console.log('✅ MongoDB connected'))
-.catch((err) => {
-  console.error('❌ MongoDB connection error:', err.message);
-  process.exit(1);
-});
-
-// API Routes
-app.use('/api/orders', orderRoutes);
-app.use('/api/delivery', deliveryRoutes);
+// Mount API routes
+app.use('/api/orders',    orderRoutes);
+app.use('/api/delivery',  deliveryRoutes);
 app.use('/api/inventory', inventoryRoutes);
-app.use('/api/forecast', forecastRoutes);
+app.use('/api/forecast',  forecastRoutes);
+app.use('/api/users',     userRoutes);          // if you have user endpoints
 
 // Root health check
 app.get('/', (req, res) => {
@@ -45,14 +34,15 @@ app.get('/', (req, res) => {
 });
 
 // 404 handler
-app.use((req, res, next) => {
+app.use((req, res) => {
   res.status(404).json({ error: 'Endpoint not found' });
 });
 
-// Error handler
+// Global error handler
 app.use((err, req, res, next) => {
   console.error('❌ Server Error:', err.stack);
   res.status(500).json({ error: 'Internal Server Error' });
 });
 
 export default app;
+
