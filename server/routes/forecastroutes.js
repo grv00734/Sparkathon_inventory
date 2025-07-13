@@ -3,6 +3,9 @@ import axios from 'axios';
 
 const router = express.Router();
 
+// Get ML engine URL from environment variables
+const ML_ENGINE_URL = process.env.ML_ENGINE_URL || 'http://localhost:5002';
+
 // 1. PREDICT route for individual forecast
 router.post('/predict', async (req, res) => {
   try {
@@ -14,18 +17,32 @@ router.post('/predict', async (req, res) => {
     }
 
     // POST to ML engine with what it needs
-    const mlResponse = await axios.post('http://192.168.8.132:5002/forecast', {
+    const mlResponse = await axios.post(`${ML_ENGINE_URL}/forecast`, {
       productId,
       warehouseId
+    }, {
+      timeout: 30000, // 30 second timeout
+      headers: {
+        'Content-Type': 'application/json'
+      }
     });
 
     res.json(mlResponse.data); // Pass ML engine's prediction to frontend
 
   } catch (error) {
     console.error('❌ ML engine error:', error.message);
-    if (error.response && error.response.data) {
-      return res.status(500).json(error.response.data);
+    
+    if (error.code === 'ECONNREFUSED') {
+      return res.status(503).json({ 
+        error: 'ML engine is not available. Please ensure it is running.',
+        details: `Unable to connect to ${ML_ENGINE_URL}`
+      });
     }
+    
+    if (error.response && error.response.data) {
+      return res.status(error.response.status || 500).json(error.response.data);
+    }
+    
     res.status(500).json({ error: 'Failed to fetch forecast from ML engine' });
   }
 });

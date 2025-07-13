@@ -19,21 +19,31 @@ app.use(morgan('dev')); // Logs HTTP requests
 import orderRoutes     from './routes/orderRoutes.js';
 import deliveryRoutes  from './routes/deliveryroutes.js';
 import inventoryRoutes from './routes/inventoryroutes.js';
-import forecastRoutes  from './routes/forecastroutes.js'; //  Correct spelling and casing
-import userRoutes      from './routes/userRoutes.js';     // Optional if you have user routes
+import forecastRoutes  from './routes/forecastroutes.js';
+import userRoutes      from './routes/userRoutes.js';
 import testRoute from './routes/testRoute.js';
-app.use('/api/test', testRoute);
 
 // Mount routes
 app.use('/api/orders',    orderRoutes);
 app.use('/api/delivery',  deliveryRoutes);
 app.use('/api/inventory', inventoryRoutes);
-app.use('/api/forecast',  forecastRoutes);  // ✅ Your ML API
-app.use('/api/users',     userRoutes);      // Optional
+app.use('/api/forecast',  forecastRoutes);
+app.use('/api/users',     userRoutes);
+app.use('/api/test', testRoute);
 
 // Root route
 app.get('/', (req, res) => {
   res.send('🚀 Smart Delivery System API is running...');
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    service: 'Smart Delivery API',
+    version: '1.0.0',
+    timestamp: new Date().toISOString()
+  });
 });
 
 // 404 handler

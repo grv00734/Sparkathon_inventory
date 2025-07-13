@@ -8,9 +8,16 @@ import {
 
 const router = express.Router();
 
+// Get all deliveries
 router.get('/', getAllDeliveries);
-router.get('/:deliveryId', trackDelivery);
+
+// Track specific delivery
+router.get('/:deliveryId/track', trackDelivery);
+
+// Update delivery status
 router.put('/:deliveryId/status', updateDeliveryStatus);
-router.get('/route', getOptimizedRoute);
+
+// Get optimized route for multiple deliveries
+router.post('/optimize-route', getOptimizedRoute);
 
 export default router;

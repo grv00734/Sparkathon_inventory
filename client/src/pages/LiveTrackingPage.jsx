@@ -1,23 +1,39 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import socketIOClient from 'socket.io-client';
 
-const socket = socketIOClient(process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000');
+// Use environment variable for socket URL
+const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000';
+const socket = socketIOClient(SOCKET_URL);
 
 const LiveTrackingPage = () => {
-  const [agents, setAgents] = useState([]);
+  const [deliveries, setDeliveries] = useState([]);
+  const [agentLocations, setAgentLocations] = useState({});
 
   useEffect(() => {
-    socket.on('agentLocation', (data) => {
-      setAgents((prev) => {
-        const existing = prev.find((a) => a.agentId === data.agentId);
-        if (existing) {
-          return prev.map((a) => (a.agentId === data.agentId ? data : a));
-        }
-        return [...prev, data];
-      });
+    // Listen for delivery status updates
+    socket.on('deliveryStatusUpdate', (data) => {
+      setDeliveries(prev => 
+        prev.map(delivery => 
+          delivery.id === data.deliveryId 
+            ? { ...delivery, status: data.status, location: data.location, timestamp: data.timestamp }
+            : delivery
+        )
+      );
     });
-    return () => socket.off('agentLocation');
+
+    // Listen for agent location updates
+    socket.on('agentLocation', (data) => {
+      setAgentLocations(prev => ({
+        ...prev,
+        [data.agentId]: data
+      }));
+    });
+
+    return () => {
+      socket.off('deliveryStatusUpdate');
+      socket.off('agentLocation');
+    };
   }, []);
 
   return (
@@ -28,7 +44,7 @@ const LiveTrackingPage = () => {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution="&copy; OpenStreetMap contributors"
         />
-        {agents.map((agent) => (
+        {Object.values(agentLocations).map((agent) => (
           <Marker key={agent.agentId} position={[agent.lat, agent.lon]}>
             <Popup>
               Agent: {agent.agentId}<br />
