@@ -11,6 +11,7 @@ def forecast():
     product_id = data.get('productId')
     warehouse_id = data.get('warehouseId')
 
+
     if not product_id or not warehouse_id:
         return jsonify({'error': 'productId and warehouseId are required'}), 400
 
