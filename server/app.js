@@ -1,4 +1,5 @@
 // server/app.js
+
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
@@ -14,21 +15,23 @@ app.use(cors());
 app.use(express.json());
 app.use(morgan('dev')); // Logs HTTP requests
 
-// Import routes (match filenames exactly)
+// Import routes (make sure file names match exactly)
 import orderRoutes     from './routes/orderRoutes.js';
 import deliveryRoutes  from './routes/deliveryroutes.js';
 import inventoryRoutes from './routes/inventoryroutes.js';
-import forecastRoutes  from './routes/forecastroutes.js';
-import userRoutes      from './routes/userRoutes.js';  // if you have userRoutes
+import forecastRoutes  from './routes/forecastroutes.js'; //  Correct spelling and casing
+import userRoutes      from './routes/userRoutes.js';     // Optional if you have user routes
+import testRoute from './routes/testRoute.js';
+app.use('/api/test', testRoute);
 
-// Mount API routes
+// Mount routes
 app.use('/api/orders',    orderRoutes);
 app.use('/api/delivery',  deliveryRoutes);
 app.use('/api/inventory', inventoryRoutes);
-app.use('/api/forecast',  forecastRoutes);
-app.use('/api/users',     userRoutes);          // if you have user endpoints
+app.use('/api/forecast',  forecastRoutes);  // ✅ Your ML API
+app.use('/api/users',     userRoutes);      // Optional
 
-// Root health check
+// Root route
 app.get('/', (req, res) => {
   res.send('🚀 Smart Delivery System API is running...');
 });
