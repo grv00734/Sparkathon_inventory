@@ -22,6 +22,8 @@ const ForecastPage = () => {
   const [prediction, setPrediction] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [summary, setSummary] = useState(null);
+  const [loadingSummary, setLoadingSummary] = useState(false);
 
   // Helper: CSV parsing
   function parseCSV(csv) {
@@ -97,7 +99,6 @@ const ForecastPage = () => {
     }
     setLoading(true);
     try {
-      // Send BOTH files' data to backend
       const res = await fetch("http://localhost:5000/api/forecast/predict", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -116,9 +117,32 @@ const ForecastPage = () => {
     setLoading(false);
   };
 
+  // Summary handler
+  const handleShowSummary = async () => {
+    setError("");
+    setSummary(null);
+    setLoadingSummary(true);
+    try {
+      // Send both files' data to backend for summary
+      const res = await fetch("http://localhost:5000/api/forecast/summary", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ordersData,
+          inventoryData,
+        }),
+      });
+      const data = await res.json();
+      setSummary(data);
+    } catch {
+      setError("Summary fetch failed!");
+    }
+    setLoadingSummary(false);
+  };
+
   // For card UI
   const cardStyle = {
-    maxWidth: 450,
+    maxWidth: 480,
     margin: "70px auto 0 auto",
     padding: "36px 32px 40px 32px",
     borderRadius: "22px",
@@ -260,6 +284,25 @@ const ForecastPage = () => {
             >
               {loading ? "Predicting..." : "Predict"}
             </button>
+            {/* Show All Warnings / Summary Button */}
+            <button
+              style={{
+                marginTop: 10,
+                marginBottom: 18,
+                padding: "8px 18px",
+                fontWeight: "bold",
+                fontSize: 15,
+                background: "#22b573",
+                color: "#fff",
+                border: "none",
+                borderRadius: 8,
+                cursor: "pointer",
+              }}
+              onClick={handleShowSummary}
+              disabled={loadingSummary}
+            >
+              {loadingSummary ? "Loading..." : "Show All Warnings"}
+            </button>
           </>
         )}
         {/* Results */}
@@ -339,6 +382,39 @@ const ForecastPage = () => {
             </div>
           )}
         </div>
+        {/* Summary Table */}
+        {summary && summary.lowStockList && (
+          <div style={{marginTop: 18, background: "#fff9e6", borderRadius: 9, padding: 14}}>
+            <h3 style={{color: "#d35400", margin: "0 0 8px 0"}}>Low Stock & High Demand Summary</h3>
+            <table style={{width: "100%", borderCollapse: "collapse", fontSize: 14}}>
+              <thead>
+                <tr>
+                  <th style={{border: "1px solid #eee", padding: 6}}>Product</th>
+                  <th style={{border: "1px solid #eee", padding: 6}}>Warehouse</th>
+                  <th style={{border: "1px solid #eee", padding: 6}}>Current Inventory</th>
+                  <th style={{border: "1px solid #eee", padding: 6}}>Avg Daily Sales</th>
+                  <th style={{border: "1px solid #eee", padding: 6}}>Alert</th>
+                </tr>
+              </thead>
+              <tbody>
+                {summary.lowStockList.map((row, i) => (
+                  <tr key={i}>
+                    <td style={{border: "1px solid #eee", padding: 6}}>{row.sku_id}</td>
+                    <td style={{border: "1px solid #eee", padding: 6}}>{row.warehouse_id}</td>
+                    <td style={{border: "1px solid #eee", padding: 6}}>{row.current_inventory}</td>
+                    <td style={{border: "1px solid #eee", padding: 6}}>{row.avg_daily_sales}</td>
+                    <td style={{
+                      border: "1px solid #eee",
+                      padding: 6,
+                      color: row.alert === "Low Stock" ? "#e74c3c" : "#22b573",
+                      fontWeight: "bold"
+                    }}>{row.alert}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
